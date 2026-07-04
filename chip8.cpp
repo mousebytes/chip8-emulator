@@ -150,8 +150,19 @@ void CHIP8::OP_8xy3()
 
 void CHIP8::OP_8xy4()
 {
-    std::uint8_t Vx = registers[(opcode & 0x0F00U)] >> 8U;
-    std::uint8_t Vy = registers[(opcode & 0x00F0U)] >> 4U;
-
+    std::uint8_t Vx = registers[(opcode & 0x0F00U) >> 8U];
+    std::uint8_t Vy = registers[(opcode & 0x00F0U) >> 4U];
     
+    std::uint16_t sum = Vx + Vy;
+
+    if(sum > 255U)
+    {
+        registers[0xFU] = 1U;
+    }
+    else
+    {
+        registers[0xFU] = 0;
+    }
+
+    registers[Vx] = sum & 0xFFU;
 }
