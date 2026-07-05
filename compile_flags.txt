@@ -1,1 +1,2 @@
 --target=x86_64-w64-mingw32
+-IE:/projects/c++/resources/SDL3-devel-3.4.12-mingw/x86_64-w64-mingw32/include

@@ -12,6 +12,7 @@ CHIP8::CHIP8()
     rand_byte(0,255U)
 {
     LoadFontSet();
+    MapOPs();
 }
 
 void CHIP8::LoadRom(std::string filename)
@@ -72,6 +73,61 @@ void CHIP8::LoadFontSet()
     {
         memory[fontset_start_address + i] = fontset[i];
     }
+}
+
+void CHIP8::MapOPs()
+{
+    std::fill_n(table, 0xF+1, &CHIP8::OP_NULL);
+
+    table[0x1] = &CHIP8::OP_1nnn;
+    table[0x2] = &CHIP8::OP_2nnn;
+    table[0x3] = &CHIP8::OP_3xkk;
+    table[0x4] = &CHIP8::OP_4xkk;
+    table[0x5] = &CHIP8::OP_5xy0;
+    table[0x6] = &CHIP8::OP_6xkk;
+    table[0x7] = &CHIP8::OP_7xkk;
+    table[0x9] = &CHIP8::OP_9xy0;
+    table[0xA] = &CHIP8::OP_Annn;
+    table[0xB] = &CHIP8::OP_Bnnn;
+    table[0xC] = &CHIP8::OP_Cxkk;
+    table[0xD] = &CHIP8::OP_Dxyn;
+
+    // table entries still available after this population:
+    // 0, 8, E, F
+    table[0x0] = &CHIP8::Table0;
+    table[0x8] = &CHIP8::Table8;
+    table[0xE] = &CHIP8::TableE;
+    table[0xF] = &CHIP8::TableF;
+
+    // table 0 entries
+    table0[0x0] = &CHIP8::OP_00E0;
+    table0[0xE] = &CHIP8::OP_00EE;
+
+    // table 8 entries
+    table8[0x0] = &CHIP8::OP_8xy0;
+    table8[0x1] = &CHIP8::OP_8xy1;
+    table8[0x2] = &CHIP8::OP_8xy2;
+    table8[0x3] = &CHIP8::OP_8xy3;
+    table8[0x4] = &CHIP8::OP_8xy4;
+    table8[0x5] = &CHIP8::OP_8xy5;
+    table8[0x6] = &CHIP8::OP_8xy6;
+    table8[0x7] = &CHIP8::OP_8xy7;
+    table8[0xE] = &CHIP8::OP_8xyE;
+
+    // table E entries
+    tableE[0x1] = &CHIP8::OP_ExA1;
+    tableE[0xE] = &CHIP8::OP_Ex9E;    
+
+    // table F entries
+    tableF[0x07] = &CHIP8::OP_Fx07;
+    tableF[0x0A] = &CHIP8::OP_Fx0A;
+    tableF[0x15] = &CHIP8::OP_Fx15;
+    tableF[0x18] = &CHIP8::OP_Fx18;
+    tableF[0x1E] = &CHIP8::OP_Fx1E;
+    tableF[0x29] = &CHIP8::OP_Fx29;
+    tableF[0x33] = &CHIP8::OP_Fx33;
+    tableF[0x55] = &CHIP8::OP_Fx55;
+    tableF[0x65] = &CHIP8::OP_Fx65;
 }
 
 void CHIP8::OP_00E0()
@@ -416,5 +472,41 @@ void CHIP8::OP_Fx65()
     for(std::uint8_t i = 0; i <= Vx; i++)
     {
         registers[i] = memory[index_register + i];
+    }
+}
+
+void CHIP8::Table0()
+{
+    (this->*(table0[opcode & 0x000FU]))();
+}
+void CHIP8::Table8()
+{
+    (this->*(table8[opcode & 0x000FU]))();
+}
+void CHIP8::TableE()
+{
+    (this->*(tableE[opcode & 0x000FU]))();
+}
+void CHIP8::TableF()
+{
+    (this->*(tableF[opcode & 0x00FFU]))();
+}
+
+void CHIP8::Cycle()
+{
+    opcode = (memory[program_counter] << 8U | memory[program_counter + 1]);
+
+    program_counter += 2;
+
+    (this->*(table[(opcode & 0xF000) >> 12U]))();
+
+    if(delay_timer > 0)
+    {
+        delay_timer -= 1;
+    }
+
+    if(sound_timer > 0)
+    {
+        sound_timer -= 1;
     }
 }
