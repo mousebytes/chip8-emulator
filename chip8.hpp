@@ -36,8 +36,8 @@ class CHIP8
     // Q W E R
     // A S D F
     // Z X C V
-    std::uint16_t keys;
-    std::uint8_t pixels[64 * 32];
+    std::uint16_t keys[16];
+    std::uint32_t pixels[64 * 32];
 
     std::mt19937 rand_gen;
     std::uniform_int_distribution<std::uint8_t> rand_byte;
@@ -60,6 +60,25 @@ class CHIP8
     void OP_8xy3();
     void OP_8xy4();
     void OP_8xy5();
+    void OP_8xy6();
+    void OP_8xy7();
+    void OP_8xyE();
+    void OP_9xy0();
+    void OP_Annn();
+    void OP_Bnnn();
+    void OP_Cxkk();
+    void OP_Dxyn();
+    void OP_Ex9E();
+    void OP_ExA1();
+    void OP_Fx07();
+    void OP_Fx0A();
+    void OP_Fx15();
+    void OP_Fx18();
+    void OP_Fx1E();
+    void OP_Fx29();
+    void OP_Fx33();
+    void OP_Fx55();
+    void OP_Fx65();
 
     public:
 
