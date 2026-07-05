@@ -1,1 +1,0 @@
-g++ main.cpp chip8.cpp platform.cpp -o emulator.exe -IE:/projects/c++/resources/SDL3-devel-3.4.12-mingw/x86_64-w64-mingw32/include -LE:/projects/c++/resources/SDL3-devel-3.4.12-mingw/x86_64-w64-mingw32/lib -lmingw32 -lSDL3

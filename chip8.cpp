@@ -1,16 +1,16 @@
 #include "chip8.hpp"
 
-#define MEM_SIZE 4096
-#define START_ADDRESS 0x200
-#define VIDEO_WIDTH 64
-#define VIDEO_HEIGHT 32
-#define FONT_START 0x50U
+
 
 CHIP8::CHIP8() 
     : program_counter(START_ADDRESS),
     rand_gen(std::random_device{}()),
     rand_byte(0,255U)
 {
+    std::fill_n(pixels, VIDEO_WIDTH * VIDEO_HEIGHT, 0);
+    std::fill_n(memory, MEM_SIZE, 0);
+    std::fill_n(registers, 16, 0);
+
     LoadFontSet();
     MapOPs();
 }
@@ -18,6 +18,12 @@ CHIP8::CHIP8()
 void CHIP8::LoadRom(std::string filename)
 {
     std::ifstream file(filename, std::ios::binary | std::ios::ate);
+
+    if(!file.is_open())
+    {
+        std::cerr << "CRITICAL ERROR: Failed to open ROM file at " << filename << '\n';
+        std::exit(EXIT_FAILURE);
+    }
 
     if(file.is_open())
     {
@@ -77,7 +83,11 @@ void CHIP8::LoadFontSet()
 
 void CHIP8::MapOPs()
 {
-    std::fill_n(table, 0xF+1, &CHIP8::OP_NULL);
+    std::fill_n(table, 0xF + 1, &CHIP8::OP_NULL);
+    std::fill_n(table0, 0xE + 1, &CHIP8::OP_NULL);
+    std::fill_n(table8, 0xE + 1, &CHIP8::OP_NULL);
+    std::fill_n(tableE, 0xE + 1, &CHIP8::OP_NULL);
+    std::fill_n(tableF, 0x65+1, &CHIP8::OP_NULL);
 
     table[0x1] = &CHIP8::OP_1nnn;
     table[0x2] = &CHIP8::OP_2nnn;
@@ -132,7 +142,7 @@ void CHIP8::MapOPs()
 
 void CHIP8::OP_00E0()
 {
-    std::fill_n(pixels, sizeof(pixels), 0);
+    std::fill_n(pixels, VIDEO_WIDTH * VIDEO_HEIGHT, 0);
 }
 
 void CHIP8::OP_00EE()
@@ -327,18 +337,27 @@ void CHIP8::OP_Dxyn()
 
     registers[0xFU] = 0;
 
-    for(int x = 0; x < 8; x++)
+    // Outer loop iterates over the rows (height)
+    for(int row = 0; row < height; row++)
     {
-        std::uint8_t sprite_byte = registers[index_register + x];
-        for(int y = 0; y < height; y++)
-        {
-            std::uint8_t sprite_pixel = sprite_byte & (0x80U >> y);
-            uint32_t* screen_pixel = &pixels[(yPos+x) * VIDEO_WIDTH + (xPos + y)]; 
+        // Sprites are read from main memory
+        std::uint8_t sprite_byte = memory[index_register + row];
 
-            // sprite pixel is on
-            if(screen_pixel)
+        // Inner loop iterates over the 8 bits (columns) in the sprite byte
+        for(int col = 0; col < 8; col++)
+        {
+            std::uint8_t sprite_pixel = sprite_byte & (0x80U >> col);
+            
+            // Boundary check to prevent writing outside the screen array
+            if ((yPos + row) >= VIDEO_HEIGHT || (xPos + col) >= VIDEO_WIDTH)
             {
-                // screen pixel is also on - collision
+                continue; 
+            }
+
+            uint32_t* screen_pixel = &pixels[(yPos + row) * VIDEO_WIDTH + (xPos + col)]; 
+
+            if(sprite_pixel)
+            {
                 if(*screen_pixel == 0xFFFFFFFF)
                 {
                     registers[0xFU] = 1;
@@ -494,6 +513,11 @@ void CHIP8::TableF()
 
 void CHIP8::Cycle()
 {
+    if (program_counter >= 4094) 
+    {
+        std::cerr << "CRITICAL ERROR: Program Counter ran out of bounds!\n";
+        std::exit(EXIT_FAILURE); 
+    }
     opcode = (memory[program_counter] << 8U | memory[program_counter + 1]);
 
     program_counter += 2;

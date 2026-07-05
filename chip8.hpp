@@ -11,6 +11,12 @@
 #include <algorithm>
 #include <random>
 
+#define MEM_SIZE 4096
+#define START_ADDRESS 0x200
+#define VIDEO_WIDTH 64
+#define VIDEO_HEIGHT 32
+#define FONT_START 0x50U
+
 class CHIP8
 {
     private:
@@ -29,7 +35,7 @@ class CHIP8
     std::uint8_t delay_timer;
     std::uint8_t sound_timer;
 
-    std::uint8_t opcode;
+    std::uint16_t opcode;
 
     std::mt19937 rand_gen;
     std::uniform_int_distribution<std::uint8_t> rand_byte;
@@ -96,7 +102,7 @@ class CHIP8
     // Q W E R
     // A S D F
     // Z X C V
-    std::uint16_t keys[16];
+    std::uint8_t keys[16];
     std::uint32_t pixels[64 * 32];
 
     CHIP8();
